@@ -3,41 +3,22 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 
+	"github.com/eriknylander/scraper/internal/filesystem"
+	"github.com/eriknylander/scraper/internal/http"
 	"github.com/eriknylander/scraper/internal/links"
+	"github.com/eriknylander/scraper/internal/scraping"
 )
 
 func main() {
 	ctx := context.Background()
-	b, err := getPage(ctx, "https://books.toscrape.com")
+
+	s := scraping.NewScraper("http://books.toscrape.com", "C:\\Users\\nylan\\go\\src\\github.com\\eriknylander\\scraper\\downloaded", http.NewFetcher(), links.NewHTMLParser(), filesystem.NewFileWriter())
+
+	downloaded, err := s.Scrape(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	l, err := links.NewHTMLParser().ParseLinks(b)
-	if err != nil {
-		panic(err)
-	}
-
-	for i := range l {
-		fmt.Println(l[i])
-	}
-}
-
-func getPage(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer res.Body.Close()
-
-	return io.ReadAll(res.Body)
+	fmt.Printf("Finished scraping, downloaded: %d assets\n", downloaded)
 }
